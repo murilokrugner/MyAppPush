@@ -5,7 +5,12 @@ import messaging from '@react-native-firebase/messaging';
 import PushNotificationIOS from "@react-native-community/push-notification-ios";
 import PushNotification from "react-native-push-notification";
 
+import notifee, { EventType }  from '@notifee/react-native';
+
+import SplashScreen from 'react-native-splash-screen'
+
 const MyPushApp: React.FC = () => {
+  const [loading, setLoading] = React.useState(true);
 
   async function loadPushNotifications() {
     PushNotification.configure({
@@ -73,21 +78,82 @@ const MyPushApp: React.FC = () => {
   async function getToken() {
     const token = await messaging().getToken();
 
-    console.log(token);
+    console.log('TOKEN ', token);
+  }
+
+  async function loadNotifiee() {
+    notifee.onBackgroundEvent(async ({ type, detail }) => {
+      console.log('CLICOOOOOOU');
+    })
+  }
+
+  async function bootstrap() {
+    const initialNotification = await notifee.getInitialNotification();
+
+    if (initialNotification) {
+      console.log('Notification caused application to open', initialNotification.notification);
+      console.log('Press action used to open the app', initialNotification.pressAction);
+    }
   }
 
   useEffect(() => {
-    requestUserPermission();
-    //getToken();
-    loadPushNotifications();
+    messaging()
+      .getInitialNotification()
+      .then(remoteMessage => {
+        console.log('GET INITIAL ----', remoteMessage);
+        if (remoteMessage) {
+          console.log(
+            'Notification caused app to open from quit state:',
+            remoteMessage.notification,
+          );
+        }
+        setLoading(false);
+      });
+  }, []);
 
-    const unsubscribe = messaging().onMessage(async remoteMessage => {
+  useEffect(() => {
+    SplashScreen.hide();
+    //getToken();
+      /*notifee.onBackgroundEvent(async ({ type, detail }) => {
+      const { notification, pressAction } = detail;
+
+      // Check if the user pressed the "Mark as read" action
+      if (type === EventType.ACTION_PRESS) {
+        // Update external API
+        console.log('CLICK')
+        // Remove the notification
+        await notifee.cancelNotification(notification.id);
+      }
+    });
+
+    notifee.onForegroundEvent(({ type, detail }) => {
+      switch (type) {
+        case EventType.DISMISSED:
+          console.log('User dismissed notification', detail.notification);
+          break;
+        case EventType.PRESS:
+          console.log('User pressed notification', detail.notification);
+          break;
+      }
+    });*/
+  }, []);
+
+  /*useEffect(() => {
+    bootstrap()
+      .then(() => setLoading(false))
+      .catch(console.error)
+   // loadNotifiee();
+   // getToken();
+   /* requestUserPermission();
+    loadPushNotifications();*/
+
+   /* const unsubscribe = messaging().onMessage(async remoteMessage => {
       //Alert.alert('A new FCM message arrived!', JSON.stringify(remoteMessage));
       console.log('A new FCM message arrived!', JSON.stringify(remoteMessage))
     });
 
     return unsubscribe;
-  }, []);
+  }, []);*/
 
   return (
     <View style={{flex: 1, justifyContent: 'center', alignItems: 'center'}}>
